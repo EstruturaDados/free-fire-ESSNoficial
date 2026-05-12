@@ -1,24 +1,25 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
-#define MAX_ITENS 10
+#define MAX_COMPONENTES 10
 
 // ==========================
-// Definição da Struct Item
+// Struct Componente
 // ==========================
 typedef struct {
     char nome[30];
     char tipo[20];
     int quantidade;
-} Item;
+    int prioridade;
+} Componente;
 
-// Vetor da mochila
-Item mochila[MAX_ITENS];
-int totalItens = 0;
+Componente mochila[MAX_COMPONENTES];
+int totalComponentes = 0;
+int ordenadoPorNome = 0;
+long comparacoes = 0;
 
-// ==========================
-// Função pausa
 // ==========================
 void pausar() {
     printf("\nPressione Enter para continuar...");
@@ -27,90 +28,68 @@ void pausar() {
 }
 
 // ==========================
-// Listar itens
+// Mostrar componentes (Tabela formatada conforme imagem)
 // ==========================
-void listarItens() {
+void mostrarComponentes(Componente vetor[], int tamanho) {
+    printf("\n--- INVENTARIO ATUAL (%d/%d) ---\n", tamanho, MAX_COMPONENTES);
+    printf("---------------------------------------------------------------------------\n");
+    printf("%-20s | %-15s | %-10s | %s\n", "NOME", "TIPO", "QUANTIDADE", "PRIORIDADE");
+    printf("---------------------------------------------------------------------------\n");
 
-    printf("\n--- ITENS NA MOCHILA (%d/%d) ---\n",
-           totalItens,
-           MAX_ITENS);
-
-    printf("--------------------------------------------------\n");
-    printf("NOME               | TIPO           | QUANTIDADE\n");
-    printf("--------------------------------------------------\n");
-
-    if (totalItens == 0) {
-
-        printf("Mochila vazia!\n");
-
+    if (tamanho == 0) {
+        printf("Inventario vazio.\n");
     } else {
-
-        for (int i = 0; i < totalItens; i++) {
-
-            printf("%-18s | %-14s | %d\n",
-                   mochila[i].nome,
-                   mochila[i].tipo,
-                   mochila[i].quantidade);
+        for (int i = 0; i < tamanho; i++) {
+            printf("%-20s | %-15s | %-10d | %d\n",
+                   vetor[i].nome,
+                   vetor[i].tipo,
+                   vetor[i].quantidade,
+                   vetor[i].prioridade);
         }
     }
-
-    printf("--------------------------------------------------\n");
+    printf("---------------------------------------------------------------------------\n");
 }
 
 // ==========================
-// Inserir item
+// Adicionar componente
 // ==========================
-void inserirItem() {
-
-    if (totalItens >= MAX_ITENS) {
-
+void adicionarComponente() {
+    if (totalComponentes >= MAX_COMPONENTES) {
         printf("\nMochila cheia!\n");
         pausar();
         return;
     }
 
-    Item novo;
-
-    printf("\nNome do item: ");
+    Componente novo;
+    printf("\n--- Coletando Novo Componente ---\n");
+    printf("Nome: ");
     scanf(" %[^\n]", novo.nome);
-
     printf("Tipo: ");
     scanf(" %[^\n]", novo.tipo);
-
     printf("Quantidade: ");
     scanf("%d", &novo.quantidade);
+    printf("Prioridade de Montagem (1-5): ");
+    scanf("%d", &novo.prioridade);
 
-    mochila[totalItens] = novo;
-    totalItens++;
+    mochila[totalComponentes] = novo;
+    totalComponentes++;
+    ordenadoPorNome = 0;
 
-    printf("\nItem '%s' adicionado com sucesso!\n",
-           novo.nome);
-
-    listarItens();
+    printf("\nComponente '%s' adicionado!\n", novo.nome);
+    mostrarComponentes(mochila, totalComponentes);
     pausar();
 }
 
 // ==========================
-// Remover item
+// Remover componente
 // ==========================
-void removerItem() {
-
-    if (totalItens == 0) {
-
-        printf("\nMochila vazia!\n");
-        pausar();
-        return;
-    }
-
+void removerComponente() {
     char nome[30];
     int pos = -1;
-
-    printf("\nDigite o nome do item a remover: ");
+    printf("\nDigite o nome do componente para descartar: ");
     scanf(" %[^\n]", nome);
 
-    // Busca sequencial
-    for (int i = 0; i < totalItens; i++) {
-
+    for (int i = 0; i < totalComponentes; i++) {
         if (strcmp(mochila[i].nome, nome) == 0) {
             pos = i;
             break;
@@ -118,142 +97,181 @@ void removerItem() {
     }
 
     if (pos == -1) {
-
-        printf("\nItem nao encontrado!\n");
-
+        printf("\nComponente nao encontrado.\n");
     } else {
-
-        for (int i = pos; i < totalItens - 1; i++) {
+        for (int i = pos; i < totalComponentes - 1; i++) {
             mochila[i] = mochila[i + 1];
         }
-
-        totalItens--;
-
-        printf("\nItem '%s' removido com sucesso!\n",
-               nome);
+        totalComponentes--;
+        printf("\nComponente removido.\n");
     }
-
-    listarItens();
+    mostrarComponentes(mochila, totalComponentes);
     pausar();
 }
 
 // ==========================
-// Buscar item por nome
+// Algoritmos de Ordenação
 // ==========================
-void buscarItem() {
+void bubbleSortNome(Componente vetor[], int tamanho) {
+    comparacoes = 0;
+    for (int i = 0; i < tamanho - 1; i++) {
+        for (int j = 0; j < tamanho - i - 1; j++) {
+            comparacoes++;
+            if (strcmp(vetor[j].nome, vetor[j + 1].nome) > 0) {
+                Componente temp = vetor[j];
+                vetor[j] = vetor[j + 1];
+                vetor[j + 1] = temp;
+            }
+        }
+    }
+    ordenadoPorNome = 1;
+}
 
-    if (totalItens == 0) {
+void insertionSortTipo(Componente vetor[], int tamanho) {
+    comparacoes = 0;
+    for (int i = 1; i < tamanho; i++) {
+        Componente chave = vetor[i];
+        int j = i - 1;
+        while (j >= 0 && strcmp(vetor[j].tipo, chave.tipo) > 0) {
+            comparacoes++;
+            vetor[j + 1] = vetor[j];
+            j--;
+        }
+        if (j >= 0) comparacoes++; 
+        vetor[j + 1] = chave;
+    }
+    ordenadoPorNome = 0;
+}
 
-        printf("\nMochila vazia!\n");
+void selectionSortPrioridade(Componente vetor[], int tamanho) {
+    comparacoes = 0;
+    for (int i = 0; i < tamanho - 1; i++) {
+        int menor = i;
+        for (int j = i + 1; j < tamanho; j++) {
+            comparacoes++;
+            if (vetor[j].prioridade < vetor[menor].prioridade) {
+                menor = j;
+            }
+        }
+        Componente temp = vetor[i];
+        vetor[i] = vetor[menor];
+        vetor[menor] = temp;
+    }
+    ordenadoPorNome = 0;
+}
+
+// ==========================
+// Organizar mochila (Menu atualizado)
+// ==========================
+void organizarMochila() {
+    int opcao;
+    char criterio[30];
+
+    printf("\n--- Estrategia de Organizacao ---\n");
+    printf("Como deseja ordenar os componentes?\n");
+    printf("1. Por Nome (Ordem Alfabetica)\n");
+    printf("2. Por Tipo\n");
+    printf("3. Por Prioridade de Montagem\n");
+    printf("0. Cancelar\n");
+    printf("Escolha o criterio: ");
+    scanf("%d", &opcao);
+
+    if (opcao == 0) return;
+
+    switch(opcao) {
+        case 1:
+            bubbleSortNome(mochila, totalComponentes);
+            strcpy(criterio, "NOME");
+            break;
+        case 2:
+            insertionSortTipo(mochila, totalComponentes);
+            strcpy(criterio, "TIPO");
+            break;
+        case 3:
+            selectionSortPrioridade(mochila, totalComponentes);
+            strcpy(criterio, "PRIORIDADE");
+            break;
+        default:
+            printf("\nOpcao invalida.\n");
+            return;
+    }
+
+    printf("\nMochila organizada por %s.\n", criterio);
+    printf("Analise de Desempenho: Foram necessarias %ld comparacoes.\n", comparacoes);
+
+    mostrarComponentes(mochila, totalComponentes);
+    pausar();
+}
+
+// ==========================
+// Busca binária (Alerta atualizado)
+// ==========================
+void buscarComponente() {
+    if (!ordenadoPorNome) {
+        printf("\nALERTA: A busca binaria requer que a mochila esteja ordenada por NOME.\n");
+        printf("Use a Opcao 4 para organizar a mochila primeiro.\n");
         pausar();
         return;
     }
 
     char nome[30];
-    int encontrado = 0;
-
-    printf("\n--- Buscar Item na Mochila ---\n");
-
-    printf("Digite o nome do item que deseja buscar: ");
+    printf("\n--- Busca Binária por Componente-Chave ---");
+    printf("\nNome do componente a buscar: ");
     scanf(" %[^\n]", nome);
 
-    for (int i = 0; i < totalItens; i++) {
-
-        if (strcmp(mochila[i].nome, nome) == 0) {
-
-            encontrado = 1;
-
-            printf("\n--- Item Encontrado! ---\n");
-
-            printf("Nome: %s\n",
-                   mochila[i].nome);
-
-            printf("Tipo: %s\n",
-                   mochila[i].tipo);
-
-            printf("Quantidade: %d\n",
-                   mochila[i].quantidade);
-
-            printf("------------------------\n");
-
-            break;
+    int inicio = 0, fim = totalComponentes - 1;
+    while (inicio <= fim) {
+        int meio = (inicio + fim) / 2;
+        int resultado = strcmp(mochila[meio].nome, nome);
+        if (resultado == 0) {
+            printf("\n--- COMPONENTE-CHAVE ENCONTRADO ---\n");
+            printf("Nome: %s\n", mochila[meio].nome);
+            printf("Tipo: %s\n", mochila[meio].tipo);
+            printf("Quantidade: %d\n", mochila[meio].quantidade);
+            printf("Prioridade: %d\n", mochila[meio].prioridade);
+            pausar();
+            return;
         }
+        if (resultado < 0) inicio = meio + 1;
+        else fim = meio - 1;
     }
-
-    if (!encontrado) {
-
-        printf("\nResultado: Item '%s' NAO foi encontrado na mochila.\n",
-               nome);
-    }
-
+    printf("\nComponente nao encontrado.\n");
     pausar();
 }
 
 // ==========================
-// Menu
+// Menu Principal
 // ==========================
 void mostrarMenu() {
-
-    printf("\n=========================================\n");
-    printf(" MOCHILA DE SOBREVIVENCIA - CODIGO DA ILHA\n");
-    printf("=========================================\n");
-
-    printf("Itens na Mochila: %d/%d\n\n",
-           totalItens,
-           MAX_ITENS);
-
-    printf("1. Adicionar Item (Loot)\n");
-    printf("2. Remover Item\n");
-    printf("3. Listar Itens na Mochila\n");
-    printf("4. Buscar Item por Nome\n");
-    printf("0. Sair\n");
-
-    printf("-----------------------------------------\n");
+    printf("\n============================================================\n");
+    printf("    PLANO DE FUGA - CODIGO DA ILHA (NIVEL MESTRE)\n");
+    printf("============================================================\n");
+    printf("Itens na Mochila: %d/%d\n", totalComponentes, MAX_COMPONENTES);
+    printf("Status da Ordenacao por Nome: %s\n\n", ordenadoPorNome ? "ORDENADO" : "NAO ORDENADO");
+    printf("1. Adicionar Componente\n");
+    printf("2. Descartar Componente\n");
+    printf("3. Listar Componentes (Inventario)\n");
+    printf("4. Organizar Mochila (Ordenar Componentes)\n");
+    printf("5. Busca Binaria por Componente-Chave (por nome)\n");
+    printf("0. ATIVAR TORRE DE FUGA (Sair)\n");
+    printf("------------------------------------------------------------\n");
     printf("Escolha uma opcao: ");
 }
 
-// ==========================
-// Main
-// ==========================
 int main() {
-
     int opcao;
-
     do {
-
         mostrarMenu();
-
         scanf("%d", &opcao);
-
-        switch (opcao) {
-
-            case 1:
-                inserirItem();
-                break;
-
-            case 2:
-                removerItem();
-                break;
-
-            case 3:
-                listarItens();
-                pausar();
-                break;
-
-            case 4:
-                buscarItem();
-                break;
-
-            case 0:
-                printf("\nSaindo do sistema...\n");
-                break;
-
-            default:
-                printf("\nOpcao invalida!\n");
-                pausar();
+        switch(opcao) {
+            case 1: adicionarComponente(); break;
+            case 2: removerComponente(); break;
+            case 3: mostrarComponentes(mochila, totalComponentes); pausar(); break;
+            case 4: organizarMochila(); break;
+            case 5: buscarComponente(); break;
+            case 0: printf("\nTorre ativada. Fuga iniciada!\n"); break;
+            default: printf("\nOpcao invalida.\n"); pausar();
         }
-
-    } while (opcao != 0);
-
+    } while(opcao != 0);
     return 0;
 }
